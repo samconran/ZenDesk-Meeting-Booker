@@ -1,0 +1,94 @@
+#sign-in {
+  text-align: center;
+}
+
+.title {
+  margin-top: .5rem;
+}
+
+.menu-arrow {
+  color: #8c8c8c;
+  right: 20px;
+  position: absolute;
+  margin-top: 13px;
+}
+
+.list-group-item-action {
+  cursor:pointer;
+}
+
+.row {
+  margin:0 !important;
+}
+
+.row-header {
+  margin: 0;
+  height: 15%;
+  margin-bottom: 13;
+}
+
+.row-header h3 {
+  float:right;
+  margin: 0;
+  text-align:center;
+  width: 100%;
+  position: absolute;
+  top: 1;
+}
+
+.row-header button {
+  margin-left:2;
+}
+
+.row-header button.send {
+  float:right;
+  margin-right: 2;
+}
+
+.row-header hr {
+  margin : 10 0;
+}
+
+#menu-hr {
+  position: relative;
+  top: 70%;
+}
+
+#times td, #times th {
+  text-align: center;
+  vertical-align: middle;
+}
+
+#times td {
+  cursor: pointer;
+}
+
+#times td.text-muted {
+  cursor: default;
+}
+
+ul button {
+  margin: 8 10 0;
+}
+
+#plus-minus {
+  float: right;
+  bottom: 1px;
+}
+
+p#times {
+  display: inline-block;
+}
+
+.form-inline.bottom {
+  margin: 20 0;
+}
+
+#invite-modal-footer {
+  padding : 10 15 !important;
+}
+
+.invite-tag {
+  line-height: 3 !important;
+  font-weight: normal !important;
+}

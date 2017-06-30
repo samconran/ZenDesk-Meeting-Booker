@@ -1,0 +1,347 @@
+<html>
+  <head>
+    <meta charset="utf-8">
+    <script src="https://code.jquery.com/jquery-3.1.1.slim.min.js" integrity="sha384-A7FZj7v+d/sdmMqp/nOQwliLvUsJfDHW+k9Omg/a/EheAdgtzNs3hpfag6Ed950n" crossorigin="anonymous"></script>
+    <!-- Latest compiled and minified CSS -->
+    <link id="themesheet" rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" crossorigin="anonymous">
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="./custom.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/4.0.10/handlebars.js" ></script>
+    <script src="./external/moment.js"></script>
+    <script src="./external/bootstrap-tagsinput.js"></script>
+    <link rel="stylesheet" href="./external/bootstrap-tagsinput.css">
+  </head>
+  <body>
+
+    <div id="content"></div>
+
+    <script id="entry-screen" type="text/x-handlebars-template">
+      <div id="sign-in">
+        <h3 class="u-gamma">Not Signed In</h3>
+        <hr>
+        <p>In order to use the Meeting Booker, please allow the app access to your Google Calendars:</p>
+
+        <button id="authorize-button" type="button" class="btn btn-success" style="cursor:pointer;" onclick="handleAuthClick()">Authorise</button>
+        <!--<button id="signout-button" type="button" class="btn btn-outline-danger btn-sm g-btn" style="display: none;">Sign Out</button>-->
+      </div>
+    </script>
+
+    <script id="menu" type="text/x-handlebars-template">
+      <div class="main_menu">
+        <div class="row-header">
+          <h3>Menu</h3>
+          <hr id="menu-hr">
+        </div>
+        <div class="list-group">
+          <a onclick="menuStep(this)" class="list-group-item list-group-item-action" value="book">Book Meeting <span class="menu-arrow glyphicon glyphicon-menu-right"></span></a>
+          <a onclick="menuStep(this)" class="list-group-item list-group-item-action" value="check">My Schedule <span class="menu-arrow glyphicon glyphicon-menu-right"></span></a>
+          <a onclick="menuStep(this)" class="list-group-item list-group-item-action" value="current">See Current Meeting <span class="menu-arrow glyphicon glyphicon-menu-right"></span></a>
+          <a onclick="menuStep(this)" class="list-group-item list-group-item-action" value="settings">Settings <span class="menu-arrow glyphicon glyphicon-menu-right"></span></a>
+        </div>
+      </div>
+    </script>
+
+    <script id="book" type="text/x-handlebars-template">
+      <div id="booking_page">
+        <div class="row-header">
+          <h3>Book Meeting</h3>
+          <button onclick="menuStep(this)" type="button" class="btn btn-info" value="back"><span class="glyphicon glyphicon-menu-left"></span></button>
+          <hr>
+        </div>
+        <table id="times" class="table table-hover">
+          <thead>
+            {{#each days}}
+            <th>{{this}}</th>
+            {{/each}}
+          </thead>
+          <tbody>
+              {{#each times}}
+                <tr>
+                  {{#each days}}
+                    <td class="{{#if past}}text-muted{{/if}} {{#if busy}} busy danger {{else}} free success {{/if}}" value="{{@../key}}">{{@../key}}</td>
+                  {{/each}}
+                </tr>
+              {{/each}}
+          </tbody>
+        </table>
+        <script type="text/javascript">
+
+        $('td').on('click', function (e) {
+          if($(this).hasClass('text-muted'))return false;
+
+          let day_index = $(this).index(),
+              time = $(this).attr('value'),
+              day = days[day_index],
+              date = times[time].days[day].date;
+
+          if ($(this).hasClass('free')) {
+            renderContent('#add-event', {
+              start : time,
+              end : (moment(time, "HH:mm").add("30", "minute").format("HH:mm")),
+              day,
+              date
+            });
+          } else if ($(this).hasClass('busy')) {
+            displayEvents(day, time)
+          };
+        })
+
+        </script>
+      </div>
+    </script>
+
+    <script id="add-event" type="text/x-handlebars-template">
+      <div id="add-event-main">
+        <div class="row-header">
+          <h3>Add Event</h3>
+          <button onclick="menuStep(this)" type="button" class="btn btn-info" value="book-back"><span class="glyphicon glyphicon-menu-left"></span></button>
+          <button data-toggle="modal" data-target="#invite-modal" type="button" class="btn btn-success send" disabled="disabled"><span class="glyphicon glyphicon-ok"></span></button>
+          <hr>
+        </div>
+        <div id="main-body">
+          <form>
+            <div class="form-group">
+              <label for="event-name">Event Name:</label>
+              <input id="event-name" type="text" class="form-control" placeholder="Name of the calendar event...">
+            </div>
+            <div class="form-group">
+              <label for="event-description">Event Description</label>
+              <textarea id="event-description" class="form-control" rows="2" placeholder="A description for the meeting event..."></textarea>
+            </div>
+             <div class="form-inline bottom">
+              <p id="times" style="font-size:16px;"><span class="glyphicon glyphicon-calendar"></span> <span id="event-day">{{day}}</span> <span id="event-date">{{date}}</span> &nbsp; | &nbsp;<span class="glyphicon glyphicon-time"></span><span id="event-start">{{start}}</span> – <span id="event-end">{{end}}</span></p>
+              <div id="plus-minus" class="btn-group btn-group-sm" role="group" aria-label="...">
+                <button id="add-time" onclick="addTime()" type="button" class="btn btn-default" disabled="disabled"><span class="glyphicon glyphicon-plus"></span></button>
+                <button id="minus-time" onclick="minusTime()" type="button" class="btn btn-default" disabled="disabled"><span class="glyphicon glyphicon-minus"></span></button>
+              </div>
+            </div>
+          </form>
+          <div id="invite-modal" class="modal fade" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+              <div class="modal-content">
+                <div class="modal-body">
+                  <p>Invite guests:</p>
+                  <input id="invites" data-role="tagsinput" type="text" class="form-control"/>
+                  <div class="checkbox">
+                    <label>
+                      <input type="checkbox" value="requester">
+                      Invite Requester
+                    </label>
+                  </div>
+                  <div class="checkbox">
+                    <label>
+                      <input type="checkbox" value="cc">
+                      Invite all CCed.
+                    </label>
+                  </div>
+                </div>
+                <div id="invite-modal-footer" class="modal-footer">
+                  <button type="button" class="btn btn-sm btn-danger" data-dismiss="modal">Close</button>
+                  <button type="button" id="confirm" data-loading-text="Loading..." autocomplete="off"class="btn btn-sm btn-success">Save changes</button>
+                </div>
+              </div><!-- /.modal-content -->
+            </div><!-- /.modal-dialog -->
+          </div><!-- /.modal -->
+        </div>
+        <script>
+
+        checkTimes();
+
+        $('#event-name').val('(#' + window.ticket_id + ') ');
+        $('.send').disable(false);
+
+        $('#invites').tagsinput();
+
+        $('#event-name').on('change paste keyup', function() {
+         if(!$(this).val()) {
+           $(this).parent().addClass('has-error');
+           $('.send').disable(true);
+         } else {
+           $(this).parent().removeClass('has-error');
+           $('.send').disable(false);
+         }
+        });
+
+        function addTime() {
+          $('#event-end').text(moment($('#event-end').text(), 'HH:mm').add(30, 'minute').format('HH:mm'));
+          checkTimes();
+        }
+
+        function minusTime() {
+          $('#event-end').text(moment($('#event-end').text(), 'HH:mm').subtract(30, 'minute').format('HH:mm'));
+          checkTimes();
+        }
+
+        function checkTimes () {
+          if ($('#event-end').text() !== "19:00" && !times[$('#event-end').text()].days[$('#event-day').text()].busy) {
+            $('#add-time').disable(false);
+          } else {
+            $('#add-time').disable(true);
+          }
+          if (moment($('#event-end').text(), 'HH:mm').subtract(30, 'minute').format('HH:mm') === $('#event-start').text()) {
+            $('#minus-time').disable(true);
+          } else {
+            $('#minus-time').disable(false);
+          }
+        }
+
+        function inviteReq (method) {
+          zd.get('ticket').then(function(r){
+            let requester = r.ticket.requester.email;
+            $('#invites').tagsinput(method, requester);
+          });
+        }
+
+        function inviteCC (method) {
+          zd.get('ticket').then(function(r){
+            let CCed = r.ticket.collaborators;
+            for (let i of CCed) {
+              let email = i.email;
+              $('#invites').tagsinput(method, email);
+            }
+          });
+        }
+
+        $('input[value="cc"]').on('click', function () {
+          let isChecked = $(this).prop('checked');
+          if (isChecked) {
+            inviteCC('add');
+          } else {
+            inviteCC('remove');
+          }
+        });
+
+        $('input[value="requester"]').on('click', function () {
+          let isChecked = $(this).prop('checked');
+          if (isChecked) {
+            inviteReq('add');
+          } else {
+            inviteReq('remove');
+          }
+        });
+
+        $('#confirm').on('click', function () {
+          var $btn = $(this).button('loading')
+          handleEventAdd();
+        });
+        </script>
+      </div>
+    </script>
+
+    <script id="display" type="text/x-handlebars-template">
+      <div id="display_meetings">
+        <ul class="nav nav-tabs">
+          <li><button onclick="menuStep(this)" type="button" class="btn btn-info" value="book-back"><span class="glyphicon glyphicon-menu-left"></span></button></li>
+          {{#if manyEvents}}
+            <li class="active"><a data-toggle="tab" href="#tab-0">{{events.0.calendar_name}}</a></li>
+            <li><a data-toggle="tab" href="#tab-1">{{events.1.calendar_name}}</a></li>
+            <li>
+              <a class="dropdown-toggle" data-toggle="dropdown" href="#">More<span class="caret"></span></a>
+              <ul class="dropdown-menu">
+                {{#each events}}
+                  {{#ifnotfirst @index}}
+                    <li><a data-toggle="tab" href="#tab-{{@index}}">{{calendar_name}}</a></li>
+                  {{/ifnotfirst}}
+                {{/each}}
+                </ul>
+              {{else}}
+                {{#each events}}
+                  <li {{#if @first}} class="active" {{/if}}><a data-toggle="tab" href="#tab-{{@index}}">{{calendar_name}}</a></li>
+                {{/each}}
+              {{/if}}
+            </ul>
+          </li>
+
+        <div class="tab-content">
+          {{#each events}}
+            <div id="tab-{{@key}}" class="tab-pane fade in {{#if @first}}active{{/if}}">
+              <h4><a class="name" onclick="window.open('{{src}}')" style="cursor:pointer;">{{name}}</a></h4>
+              <blockquote>
+                <p class="desc" style="font-size:14px;">{{description}}</p>
+              </blockquote>
+              <p style="font-size:16px;"><span class="glyphicon glyphicon-calendar"></span> {{../day}} {{../date}} &nbsp; | &nbsp; <span class="glyphicon glyphicon-time"></span> {{start}} – {{end}}</p>
+            </div>
+          {{/each}}
+        </div>
+        <script type="text/javascript">
+          $($('li')[0]).addClass('active');
+          $('.desc').each(function(){
+            var description = $(this).text();
+            if(description.length > 149)$(this).text(description.substring(0, 150) + '...');
+          });
+          $('.name').each(function(){
+            var name = $(this).text();
+            if(name.length > 29)$(this).text(name.substring(0, 30) + '...');
+          });
+        </script>
+      </div>
+    </script>
+
+    <script id="check" type="text/x-handlebars-template">
+      <div id="checking_page">
+        <div class="row-header">
+          <h3>My Schedule</h3>
+          <button onclick="menuStep(this)" type="button" class="btn btn-info" value="back"><span class="glyphicon glyphicon-menu-left"></span></button>
+          <hr>
+        </div>
+
+        {{#each dates}}
+
+          <h5>{{this.day}} ({{@key}}):</h5>
+
+          <table class="table table-hover table-bordered table-condensed" style="font-size: 14px;">
+            {{#each events}}
+              <tr {{#if f}}class="success"{{else}}class="danger"{{/if}}>
+                <th style="vertical-align:middle;text-align:center;width: 140px;">{{t}}</th>
+                <td style="vertical-align:middle;text-align:center;">{{#if f}} Free {{else}} {{r}} {{/if}}</td>
+              </tr>
+            {{/each}}
+          </table>
+
+        {{/each}}
+
+      </div>
+    </script>
+
+    <script id="current" type="text/x-handlebars-template">
+      <div id="meeting_page">
+        <div class="row-header">
+          <h3>Booked Meeting</h3>
+          <button onclick="menuStep(this)" type="button" class="btn btn-info" value="back"><span class="glyphicon glyphicon-menu-left"></span></button>
+          <hr>
+        </div>
+        <h4><a onclick="window.open('{{src}}')" style="cursor:pointer;">{{name}}</a></h4>
+        <blockquote>
+          <p id="desc" style="font-size:14px;">{{description}}</p>
+        </blockquote>
+        <p style="font-size:16px;"><span class="glyphicon glyphicon-calendar"></span> {{day}} {{date}} &nbsp; | &nbsp; <span class="glyphicon glyphicon-time"></span> {{start}} – {{end}}</p>
+        <script type="text/javascript">
+          var description = $("#desc").text();
+          $('#desc').text(description.substring(0, 150) + '...');
+        </script>
+      </div>
+    </script>
+
+    <script id="settings" type="text/x-handlebars-template">
+      <div id="settings_page">
+        <div class="row-header">
+          <h3>Settings</h3>
+          <button onclick="menuStep(this)" type="button" class="btn btn-info" value="back"><span class="glyphicon glyphicon-menu-left"></span></button>
+          <hr>
+        </div>
+        <p>You de-authorise this app here:</p>
+        <button id="signout-button" type="button" class="btn btn-danger" style="cursor:pointer;" onclick="handleSignoutClick()">Sign Out</button>
+      </div>
+    </script>
+
+    <!-- https://github.com/zendesk/zendesk_app_framework_sdk -->
+    <script type="text/javascript" src="https://assets.zendesk.com/apps/sdk/2.0/zaf_sdk.js"></script>
+    <script type="text/javascript" src="./main.js"></script>
+    <script async defer src="https://apis.google.com/js/api.js"
+      onload="this.onload=function(){};handleClientLoad()"
+      onreadystatechange="if (this.readyState === 'complete') this.onload()">
+    </script>
+  </body>
+</html>
